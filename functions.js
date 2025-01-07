@@ -6,7 +6,7 @@ async function fetchEntries() {
     const container = document.getElementById('cards-container');
     container.innerHTML = '';
 
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 9; i++) {
         const skeleton = document.createElement('div');
         skeleton.className = 'card bg-gray-800 shadow-xl p-4 animate-pulse';
         skeleton.innerHTML = `
@@ -36,11 +36,11 @@ function renderEntries(page, searchTerm = "", entriesPerPage = 9) {
     const currentDate = new Date();
 
     const filteredEntries = entries.filter(entry => {
-        const entryDate = new Date(entry.datum);
+        const entryDate = new Date(entry.date_ranges[0].datum);
         const isInFuture = entryDate > currentDate;
         const matchesSearchTerm = entry.thema.toLowerCase().includes(searchTerm.toLowerCase());
 
-        return isInFuture || matchesSearchTerm;
+        return isInFuture && matchesSearchTerm;
     });
 
     const startIndex = (page - 1) * entriesPerPage;
@@ -51,16 +51,36 @@ function renderEntries(page, searchTerm = "", entriesPerPage = 9) {
     pageEntries.forEach(entry => {
         const card = document.createElement('div');
         card.className = 'card bg-gray-800 shadow-xl p-4';
-        const entryDate = new Date(entry.datum);
-        const formattedDate = entryDate.toLocaleDateString();
-        const formattedTime = entryDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        const dateRanges = entry.date_ranges.map(range => {
+            const startDate = new Date(range.datum);
+            const endDate = new Date(range.enddatum);
+            return {
+                datum: startDate.toLocaleDateString(),
+                startzeit: startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                endzeit: endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+        });
+
+        const dateText = dateRanges.map(d => d.datum).join(', ');
+        const startTimeText = dateRanges.map(d => d.startzeit).join(', ');
+        const endTimeText = dateRanges.map(d => d.endzeit).join(', ');
+
+        const dateDisplay = dateRanges.length > 2 ? `${dateRanges[0].datum}, ${dateRanges[1].datum}, ...` : dateText;
+        const startTimeDisplay = dateRanges.length > 2 ? `${dateRanges[0].startzeit}, ${dateRanges[1].startzeit}, ...` : startTimeText;
+        const endTimeDisplay = dateRanges.length > 2 ? `${dateRanges[0].endzeit}, ${dateRanges[1].endzeit}, ...` : endTimeText;
+
+        const dateTooltip = dateRanges.length > 2 ? dateText : '';
+        const startTimeTooltip = dateRanges.length > 2 ? startTimeText : '';
+        const endTimeTooltip = dateRanges.length > 2 ? endTimeText : '';
 
         card.innerHTML = `
             <div class="card-body">
                 <h2 class="card-title text-lg font-bold text-white">${entry.titel || 'No Title'}</h2>
                 <p class="text-gray-400"><strong>Thema:</strong> ${entry.thema || 'No Topic'}</p>
-                <p class="text-gray-400"><strong>Datum:</strong> ${formattedDate}</p>
-                <p class="text-gray-400"><strong>Zeit:</strong> ${formattedTime}</p>
+                <p class="text-gray-400" title="${dateTooltip}"><strong>Datum:</strong> ${dateDisplay}</p>
+                <p class="text-gray-400" title="${startTimeTooltip}"><strong>Startzeit:</strong> ${startTimeDisplay}</p>
+                <p class="text-gray-400" title="${endTimeTooltip}"><strong>Endzeit:</strong> ${endTimeDisplay}</p>
                 <p class="text-gray-400"><strong>Lehrkraft:</strong> ${entry.lehrer || 'No Teacher'}</p>
             </div>
         `;
@@ -95,19 +115,87 @@ document.querySelector('input[placeholder="Search for topic"]').addEventListener
     renderEntries(1, searchTerm);
 });
 
+function createDateTimeRange() {
+    const dateTimeRangeContainer = document.getElementById('date-time-ranges');
+    const endzeitContainer = document.getElementById('endzeit-container');
+
+    const startInput = document.createElement('input');
+    startInput.type = 'datetime-local';
+    startInput.className = 'input input-bordered input-primary w-full mb-2';
+    startInput.required = true;
+
+    const endInput = document.createElement('input');
+    endInput.type = 'datetime-local';
+    endInput.className = 'input input-bordered input-primary w-full mb-2';
+    endInput.required = true;
+
+    dateTimeRangeContainer.appendChild(startInput);
+    endzeitContainer.appendChild(endInput);
+
+    startInput.addEventListener('change', function (event) {
+        const dateValue = new Date(event.target.value);
+        dateValue.setHours(dateValue.getHours() + 1);
+
+        const offsetDate = new Date(dateValue.getTime() - dateValue.getTimezoneOffset() * 60000);
+        endInput.value = offsetDate.toISOString().slice(0, 16);
+
+        endInput.min = event.target.value;
+    });
+}
 
 window.onload = fetchEntries;
+
+document.getElementById('add-fobi-modal').addEventListener('change', function () {
+    if (this.checked) {
+        createDateTimeRange();
+    }
+});
+
+document.getElementById('add-date-time-range').addEventListener('click', function () {
+    const dateTimeRangeContainer = document.getElementById('date-time-ranges');
+    const endzeitContainer = document.getElementById('endzeit-container');
+
+    const startInput = document.createElement('input');
+    startInput.type = 'datetime-local';
+    startInput.className = 'input input-bordered input-primary w-full mb-2';
+    startInput.required = true;
+
+    const endInput = document.createElement('input');
+    endInput.type = 'datetime-local';
+    endInput.className = 'input input-bordered input-primary w-full mb-2';
+    endInput.required = true;
+
+    dateTimeRangeContainer.appendChild(startInput);
+    endzeitContainer.appendChild(endInput);
+
+    startInput.addEventListener('change', function (event) {
+        const dateValue = new Date(event.target.value);
+        dateValue.setHours(dateValue.getHours() + 1);
+
+        const offsetDate = new Date(dateValue.getTime() - dateValue.getTimezoneOffset() * 60000);
+        endInput.value = offsetDate.toISOString().slice(0, 16);
+
+        endInput.min = event.target.value;
+    });
+});
 
 document.getElementById('add-fobi-form').addEventListener('submit', async function (event) {
     event.preventDefault();
 
     const thema = document.getElementById('thema').value;
     const titel = document.getElementById('titel').value;
-    const datum = document.getElementById('datum').value;
-    const zeit = document.getElementById('zeit').value;
     const lehrer = document.getElementById('lehrer').value;
 
-    const datetime = `${datum}T${zeit}`;
+    const dateRanges = [];
+    const startInputs = document.querySelectorAll('#date-time-ranges .input');
+    const endInputs = document.querySelectorAll('#endzeit-container .input');
+
+    startInputs.forEach((startInput, index) => {
+        dateRanges.push({
+            datum: startInput.value,
+            enddatum: endInputs[index].value
+        });
+    });
 
     try {
         const response = await fetch('http://localhost:3001/entries', {
@@ -118,7 +206,7 @@ document.getElementById('add-fobi-form').addEventListener('submit', async functi
             body: JSON.stringify({
                 thema,
                 titel,
-                datum: datetime,
+                dateRanges,
                 lehrer,
             }),
         });

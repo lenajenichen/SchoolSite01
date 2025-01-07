@@ -7,10 +7,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
-<div class="navbar bg-base-100">
+<div class="navbar bg-base-900">
     <div class="navbar-center w-full flex justify-center">
         <div class="form-control w-1/2 max-w-lg relative">
-            <input class="input input-bordered w-full pr-10" id="search-input" placeholder="Search for topic" type="text"/>
+            <input class="input input-bordered input-primary w-full pr-10" id="search-input" placeholder="Search for topic" type="text"/>
             <span class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
@@ -46,23 +46,26 @@
         <form id="add-fobi-form" class="mt-4">
             <div class="form-control mb-4">
                 <label class="label text-gray-400">Thema</label>
-                <input type="text" id="thema" class="input input-bordered w-full" placeholder="Thema eingeben" required/>
+                <input type="text" id="thema" class="input input-bordered input-primary w-full" placeholder="Thema eingeben" required/>
             </div>
             <div class="form-control mb-4">
                 <label class="label text-gray-400">Titel</label>
-                <input type="text" id="titel" class="input input-bordered w-full" placeholder="Titel eingeben" required/>
+                <input type="text" id="titel" class="input input-bordered input-primary w-full" placeholder="Titel eingeben" required/>
             </div>
             <div class="form-control mb-4">
-                <label class="label text-gray-400">Datum</label>
-                <input type="date" id="datum" class="input input-bordered w-full" required/>
+                <label class="label text-gray-400">Datum und Zeit</label>
+                <div id="date-time-ranges">
+                </div>
+                <button type="button" id="add-date-time-range" class="btn btn-secondary">Weitere hinzufügen</button>
             </div>
             <div class="form-control mb-4">
-                <label class="label text-gray-400">Zeit</label>
-                <input type="time" id="zeit" class="input input-bordered w-full" required/>
+                <label class="label text-gray-400">Endzeit</label>
+                <div id="endzeit-container">
+                </div>
             </div>
             <div class="form-control mb-4">
                 <label class="label text-gray-400">Lehrkraft</label>
-                <input type="text" id="lehrer" class="input input-bordered w-full" placeholder="Name der Lehrkraft" required/>
+                <input type="text" id="lehrer" class="input input-bordered input-primary w-full" placeholder="Name der Lehrkraft" required/>
             </div>
             <div class="modal-action">
                 <button type="submit" class="btn btn-primary">Speichern</button>
