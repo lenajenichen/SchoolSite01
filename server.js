@@ -1,7 +1,6 @@
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
-const bodyParser = require('body-parser');
 
 const app = express();
 const port = 3001;
@@ -17,6 +16,27 @@ const pool = new Pool({
 });
 
 app.use(cors());
+
+async function createTable() {
+    try {
+        const client = await pool.connect();
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS fobis (
+                id SERIAL PRIMARY KEY,
+                thema TEXT NOT NULL,
+                titel TEXT NOT NULL,
+                date_ranges JSONB NOT NULL,
+                lehrer TEXT NOT NULL
+            )
+        `);
+        client.release();
+        console.log('Tabelle "fobis" erfolgreich erstellt oder existiert bereits.');
+    } catch (err) {
+        console.error('Fehler beim Erstellen der Tabelle:', err);
+    }
+}
+
+createTable();
 
 app.get('/entries', async (req, res) => {
     try {

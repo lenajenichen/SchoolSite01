@@ -29,7 +29,7 @@ async function fetchEntries() {
     }
 }
 
-function renderEntries(page, searchTerm = "", entriesPerPage = 9) {
+function renderEntries(page, searchTerm = "", searchDate = "", searchTeacher = "", entriesPerPage = 9) {
     const container = document.getElementById('cards-container');
     container.innerHTML = '';
 
@@ -39,8 +39,10 @@ function renderEntries(page, searchTerm = "", entriesPerPage = 9) {
         const entryDate = new Date(entry.date_ranges[0].datum);
         const isInFuture = entryDate > currentDate;
         const matchesSearchTerm = entry.thema.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearchDate = searchDate ? entry.date_ranges.some(range => new Date(range.datum).toISOString().slice(0, 10) === searchDate) : true;
+        const matchesSearchTeacher = searchTeacher ? entry.lehrer.toLowerCase().includes(searchTeacher.toLowerCase()) : true;
 
-        return isInFuture && matchesSearchTerm;
+        return isInFuture && matchesSearchTerm && matchesSearchDate && matchesSearchTeacher;
     });
 
     const startIndex = (page - 1) * entriesPerPage;
@@ -114,7 +116,9 @@ function renderPagination(totalEntries, currentPage, entriesPerPage) {
 
 document.querySelector('input[placeholder="Search for topic"]').addEventListener('input', function(event) {
     const searchTerm = event.target.value;
-    renderEntries(1, searchTerm);
+    const searchDate = document.getElementById('search-date').value;
+    const searchTeacher = document.getElementById('search-teacher').value;
+    renderEntries(1, searchTerm, searchDate, searchTeacher);
 });
 
 function createDateTimeRange() {
@@ -255,6 +259,33 @@ document.getElementById('add-fobi-modal').addEventListener('change', function ()
         createDateTimeRange();
     }
 });
+
+document.getElementById('filter-date').addEventListener('click', () => {
+    const searchDate = document.getElementById('search-date').value.trim();
+    const searchTerm = document.querySelector('input[placeholder="Search for topic"]').value.trim();
+    const searchTeacher = document.getElementById('search-teacher').value.trim();
+
+    if (!searchDate) {
+        alert('Bitte ein Datum eingeben.');
+        return;
+    }
+
+    renderEntries(1, searchTerm, searchDate, searchTeacher);
+});
+
+document.getElementById('filter-teacher').addEventListener('click', () => {
+    const searchTeacher = document.getElementById('search-teacher').value.trim();
+    const searchTerm = document.querySelector('input[placeholder="Search for topic"]').value.trim();
+    const searchDate = document.getElementById('search-date').value.trim();
+
+    if (!searchTeacher) {
+        alert('Bitte eine Lehrkraft eingeben.');
+        return;
+    }
+
+    renderEntries(1, searchTerm, searchDate, searchTeacher);
+});
+
 
 document.getElementById('add-date-time-range').addEventListener('click', function () {
     const dateTimeRangeContainer = document.getElementById('date-time-ranges');
