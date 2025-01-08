@@ -20,7 +20,7 @@ app.use(cors());
 
 app.get('/entries', async (req, res) => {
     try {
-        const result = await pool.query('SELECT thema, titel, date_ranges, lehrer FROM fobis');
+        const result = await pool.query('SELECT id, thema, titel, date_ranges, lehrer FROM fobis');
         res.json(result.rows);
     } catch (err) {
         console.error('Fehler beim Abrufen der Daten:', err);
@@ -39,15 +39,69 @@ app.post('/entries', async (req, res) => {
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
-            await client.query(
-                'INSERT INTO fobis (thema, titel, date_ranges, lehrer) VALUES ($1, $2, $3, $4)',
+            const result = await client.query(
+                'INSERT INTO fobis (thema, titel, date_ranges, lehrer) VALUES ($1, $2, $3, $4) RETURNING id',
                 [thema, titel, JSON.stringify(dateRanges), lehrer]
             );
             await client.query('COMMIT');
-            res.status(201).json({ message: 'Eintrag hinzugefügt' });
+            res.status(201).json({ message: 'Eintrag hinzugefügt', id: result.rows[0].id });
         } catch (error) {
             await client.query('ROLLBACK');
             console.error('Fehler beim Hinzufügen:', error);
+            res.status(500).json({ error: 'Datenbankfehler' });
+        } finally {
+            client.release();
+        }
+    } catch (err) {
+        console.error('Fehler beim Abrufen der Daten:', err);
+        res.status(500).send('Serverfehler');
+    }
+});
+
+app.put('/entries/:id', async (req, res) => {
+    const { id } = req.params;
+    const { thema, titel, dateRanges, lehrer } = req.body;
+
+    if (!thema || !titel || !dateRanges || !lehrer) {
+        return res.status(400).json({ error: 'Alle Felder sind erforderlich' });
+    }
+
+    try {
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            await client.query(
+                'UPDATE fobis SET thema = $1, titel = $2, date_ranges = $3, lehrer = $4 WHERE id = $5',
+                [thema, titel, JSON.stringify(dateRanges), lehrer, id]
+            );
+            await client.query('COMMIT');
+            res.status(200).json({ message: 'Eintrag aktualisiert' });
+        } catch (error) {
+            await client.query('ROLLBACK');
+            console.error('Fehler beim Aktualisieren:', error);
+            res.status(500).json({ error: 'Datenbankfehler' });
+        } finally {
+            client.release();
+        }
+    } catch (err) {
+        console.error('Fehler beim Abrufen der Daten:', err);
+        res.status(500).send('Serverfehler');
+    }
+});
+
+app.delete('/entries/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            await client.query('DELETE FROM fobis WHERE id = $1', [id]);
+            await client.query('COMMIT');
+            res.status(200).json({ message: 'Eintrag gelöscht' });
+        } catch (error) {
+            await client.query('ROLLBACK');
+            console.error('Fehler beim Löschen:', error);
             res.status(500).json({ error: 'Datenbankfehler' });
         } finally {
             client.release();

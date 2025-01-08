@@ -82,6 +82,8 @@ function renderEntries(page, searchTerm = "", entriesPerPage = 9) {
                 <p class="text-gray-400" title="${startTimeTooltip}"><strong>Startzeit:</strong> ${startTimeDisplay}</p>
                 <p class="text-gray-400" title="${endTimeTooltip}"><strong>Endzeit:</strong> ${endTimeDisplay}</p>
                 <p class="text-gray-400"><strong>Lehrkraft:</strong> ${entry.lehrer || 'No Teacher'}</p>
+                <button class="btn btn-secondary" onclick="editEntry(${entry.id})">Edit</button>
+                <button class="btn btn-danger" onclick="deleteEntry(${entry.id})">Delete</button>
             </div>
         `;
         container.appendChild(card);
@@ -143,10 +145,113 @@ function createDateTimeRange() {
     });
 }
 
+async function editEntry(id) {
+    const entry = entries.find(entry => entry.id === id);
+    if (!entry) return;
+
+    document.getElementById('entry-id').value = entry.id;
+    document.getElementById('thema').value = entry.thema;
+    document.getElementById('titel').value = entry.titel;
+    document.getElementById('lehrer').value = entry.lehrer;
+
+    document.getElementById('date-time-ranges').innerHTML = '';
+    document.getElementById('endzeit-container').innerHTML = '';
+
+    entry.date_ranges.forEach(range => {
+        const startInput = document.createElement('input');
+        startInput.type = 'datetime-local';
+        startInput.className = 'input input-bordered input-primary w-full mb-2';
+        startInput.value = new Date(range.datum).toISOString().slice(0, 16);
+        document.getElementById('date-time-ranges').appendChild(startInput);
+
+        const endInput = document.createElement('input');
+        endInput.type = 'datetime-local';
+        endInput.className = 'input input-bordered input-primary w-full mb-2';
+        endInput.value = new Date(range.enddatum).toISOString().slice(0, 16);
+        document.getElementById('endzeit-container').appendChild(endInput);
+    });
+
+    document.getElementById('add-fobi-modal').checked = true;
+
+    document.getElementById('add-fobi-form').onsubmit = async function (event) {
+        event.preventDefault();
+
+        const id = document.getElementById('entry-id').value;
+        const thema = document.getElementById('thema').value;
+        const titel = document.getElementById('titel').value;
+        const lehrer = document.getElementById('lehrer').value;
+
+        const dateRanges = [];
+        const startInputs = document.querySelectorAll('#date-time-ranges .input');
+        const endInputs = document.querySelectorAll('#endzeit-container .input');
+
+        startInputs.forEach((startInput, index) => {
+            dateRanges.push({
+                datum: startInput.value,
+                enddatum: endInputs[index].value
+            });
+        });
+
+        try {
+            const response = await fetch(`http://localhost:3001/entries/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    thema,
+                    titel,
+                    dateRanges,
+                    lehrer,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Fehler beim Aktualisieren der Fortbildung');
+            }
+
+            document.getElementById('add-fobi-modal').checked = false;
+            await fetchEntries();
+        } catch (error) {
+            console.error('Fehler:', error);
+            alert('Eintrag konnte nicht aktualisiert werden.');
+        }
+    };
+}
+
+async function deleteEntry(id) {
+    if (!confirm('Möchten Sie diesen Eintrag wirklich löschen?')) return;
+
+    try {
+        const response = await fetch(`http://localhost:3001/entries/${id}`, {
+            method: 'DELETE',
+        });
+
+        if (!response.ok) {
+            throw new Error('Fehler beim Löschen der Fortbildung');
+        }
+
+        await fetchEntries();
+    } catch (error) {
+        console.error('Fehler:', error);
+        alert('Eintrag konnte nicht gelöscht werden.');
+    }
+}
+
+function clearForm() {
+    document.getElementById('entry-id').value = '';
+    document.getElementById('thema').value = '';
+    document.getElementById('titel').value = '';
+    document.getElementById('lehrer').value = '';
+    document.getElementById('date-time-ranges').innerHTML = '';
+    document.getElementById('endzeit-container').innerHTML = '';
+}
+
 window.onload = fetchEntries;
 
 document.getElementById('add-fobi-modal').addEventListener('change', function () {
     if (this.checked) {
+        clearForm();
         createDateTimeRange();
     }
 });
@@ -182,6 +287,7 @@ document.getElementById('add-date-time-range').addEventListener('click', functio
 document.getElementById('add-fobi-form').addEventListener('submit', async function (event) {
     event.preventDefault();
 
+    const id = document.getElementById('entry-id').value;
     const thema = document.getElementById('thema').value;
     const titel = document.getElementById('titel').value;
     const lehrer = document.getElementById('lehrer').value;
@@ -198,8 +304,11 @@ document.getElementById('add-fobi-form').addEventListener('submit', async functi
     });
 
     try {
-        const response = await fetch('http://localhost:3001/entries', {
-            method: 'POST',
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `http://localhost:3001/entries/${id}` : 'http://localhost:3001/entries';
+
+        const response = await fetch(url, {
+            method,
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -212,13 +321,13 @@ document.getElementById('add-fobi-form').addEventListener('submit', async functi
         });
 
         if (!response.ok) {
-            throw new Error('Fehler beim Hinzufügen der Fortbildung');
+            throw new Error(`Fehler beim ${id ? 'Aktualisieren' : 'Hinzufügen'} der Fortbildung`);
         }
 
         document.getElementById('add-fobi-modal').checked = false;
         await fetchEntries();
     } catch (error) {
         console.error('Fehler:', error);
-        alert('Eintrag konnte nicht hinzugefügt werden.');
+        alert(`Eintrag konnte nicht ${id ? 'aktualisiert' : 'hinzugefügt'} werden.`);
     }
 });
