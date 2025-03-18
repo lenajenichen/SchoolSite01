@@ -31,14 +31,6 @@ Bevor du das Projekt startest, stelle sicher, dass die folgenden Voraussetzungen
    npm install cors
    ```
 
-## Projekt starten
-
-1. Stelle sicher, dass die PostgreSQL-Datenbank läuft (entweder lokal oder über Docker).
-2. Führe das Projekt aus:
-   ```bash
-   node server.js
-   ```
-
 ## Konfiguration
 
 Ersetze in der server.js die vorhandenen Daten mit deinen Datenbank daten.
@@ -52,3 +44,13 @@ const pool = new Pool({
     port: 5432,
 });
 ```
+
+
+## Projekt starten
+
+1. Stelle sicher, dass die PostgreSQL-Datenbank läuft (entweder lokal oder über Docker).
+2. Führe das Projekt aus:
+   ```bash
+   node server.js
+   ```
+3. Zuletzt öffne die HTML in deinem Browser.
