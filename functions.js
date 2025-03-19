@@ -362,3 +362,10 @@ document.getElementById('add-fobi-form').addEventListener('submit', async functi
         alert(`Eintrag konnte nicht ${id ? 'aktualisiert' : 'hinzugefügt'} werden.`);
     }
 });
+
+function changeFilter() {
+    const searchFilters = document.getElementById('search-filters');
+    if(searchFilters.className === 'filter-date') {
+
+    }
+}
